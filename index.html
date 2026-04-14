@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <!-- Важно: Мета-тег для корректного масштабирования на мобильных устройствах -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <title>Моя AR Открытка</title>
+    <!-- Подключаем библиотеку A-Frame для 3D графики -->
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <!-- Подключаем библиотеку MindAR для отслеживания изображений -->
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: sans-serif; }
+        /* Небольшая инструкция для пользователя */
+        .instruction {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            color: white;
+            background-color: rgba(0,0,0,0.6);
+            padding: 8px;
+            font-size: 14px;
+            z-index: 100;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="instruction">Наведите камеру на фотографию</div>
+
+    <!-- Основная AR-сцена. Здесь мы указываем путь к нашему .mind файлу -->
+    <a-scene mindar-image="imageTargetSrc: targets.mind; autoStart: true; uiLoading: no; uiScanning: no;"
+             vr-mode-ui="enabled: false"
+             device-orientation-permission-ui="enabled: false">
+        
+        <!-- Ресурсы, которые будут использоваться в сцене -->
+        <a-assets>
+            <!-- Загружаем статичное изображение на случай, если видео не загрузится -->
+            <img id="fallback-image" src="assets/content.jpg" crossorigin="anonymous">
+            <!-- Загружаем видео -->
+            <video id="ar-video" src="assets/content.mp4" preload="auto" loop muted playsinline crossorigin="anonymous"></video>
+        </a-assets>
+
+        <!-- Настраиваем камеру. Отключаем стандартные элементы управления, чтобы ничего не мешало -->
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+        <!-- Это и есть наш целевой маркер. targetIndex: 0 означает первый маркер в .mind файле -->
+        <a-entity mindar-image-target="targetIndex: 0" id="marker">
+            <!-- Здесь мы разместим наш AR-контент: плоскость с видео -->
+            <!-- width и height: размеры плоскости (в метрах). Подберите под размер вашего маркера -->
+            <a-image id="ar-content" src="#ar-video" width="1.6" height="0.9" position="0 0 0.01" visible="false" material="color: white; shader: flat;"></a-image>
+        </a-entity>
+    </a-scene>
+
+    <script>
+        // JavaScript-код, который управляет появлением и скрытием контента
+        const markerEntity = document.querySelector("#marker");
+        const contentEntity = document.querySelector("#ar-content");
+        const videoElement = document.querySelector("#ar-video");
+
+        // Как только камера находит маркер
+        markerEntity.addEventListener("targetFound", () => {
+            console.log("Маркер найден!");
+            contentEntity.setAttribute("visible", "true");
+            // Запускаем видео
+            videoElement.play().catch(e => console.log("Автовоспроизведение заблокировано: ", e));
+        });
+
+        // Когда маркер теряется из виду
+        markerEntity.addEventListener("targetLost", () => {
+            console.log("Маркер потерян");
+            contentEntity.setAttribute("visible", "false");
+            // Ставим видео на паузу и сбрасываем
+            videoElement.pause();
+            videoElement.currentTime = 0;
+        });
+
+        // Резервный план: если видео по какой-то причине не загрузилось, показываем картинку
+        videoElement.addEventListener("error", () => {
+            console.warn("Видео не загрузилось, показываем картинку");
+            contentEntity.setAttribute("src", "#fallback-image");
+        });
+    </script>
+</body>
+</html>
