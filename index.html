@@ -83,5 +83,11 @@
             contentEntity.setAttribute("src", "#fallback-image");
         });
     </script>
+<script>
+  // Принудительно запрашиваем доступ к камере при загрузке
+  navigator.mediaDevices.getUserMedia({ video: true })
+    .then(() => console.log("Камера разрешена"))
+    .catch(e => alert("Пожалуйста, разрешите доступ к камере для этого сайта"));
+</script>
 </body>
 </html>
